@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Hands-Free Recipe Navigator</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        text-align: center;
+        padding: 20px;
+      }
+      #slide-container {
+        margin: 20px auto;
+        width: 80%;
+        max-width: 800px;
+      }
+      iframe {
+        width: 100%;
+        height: 500px;
+        border: 1px solid #ccc;
+      }
+      #status {
+        margin-top: 20px;
+        font-size: 16px;
+        color: #555;
+      }
+      select {
+        padding: 10px;
+        font-size: 16px;
+        margin-bottom: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Hands-Free Recipe Navigator</h1>
+    <select id="recipe-select">
+      <option value="">Select a Recipe</option>
+      <option value="https://docs.google.com/presentation/d/1pL3BKhaV2flIFA98uEmtvj8IBTioSZj07lmcqz_KRW0/edit#slide=id.g32f609f83fc_3_176">Recipe Fusion: Garlic Steak Bites with Miso Butter Broccoli</option>
+      <option value="Yhttps://docs.google.com/presentation/d/1iz02mQnZ3yjxpfFVtoIc_H64FrpP9eNPcHSFrNt6B2o/edit#slide=id.g32f609f83fc_0_23">Recipe Fusion Miso-Caramel Pork Chops with Apples and Garlic Mashed Potatoes</option>
+      <option value="YOUR_THIRD_RECIPE_URL">Recipe 3</option>
+    </select>
+    <div id="slide-container">
+      <iframe id="slide-iframe" src=""></iframe>
+    </div>
+    <p id="status">Select a recipe and say "next" or "repeat."</p>
+
+    <script>
+      let currentSlideIndex = 0;
+      let presentationUrl = "";
+
+      // Function to update the iframe with the current slide
+      function updateSlide() {
+        const iframe = document.getElementById("slide-iframe");
+        iframe.src = `${presentationUrl}/embed?slide=id.p${currentSlideIndex}`;
+        readSlideText();
+      }
+
+      // Function to read the slide text aloud
+      function readSlideText() {
+        const iframe = document.getElementById("slide-iframe");
+        const slideText = iframe.contentDocument?.body?.innerText || "No text found.";
+        const utterance = new SpeechSynthesisUtterance(slideText);
+        window.speechSynthesis.speak(utterance);
+      }
+
+      // Function to handle voice commands
+      function startVoiceCommands() {
+        const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+        recognition.lang = "en-US";
+        recognition.interimResults = false;
+        recognition.maxAlternatives = 1;
+
+        recognition.start();
+
+        recognition.onresult = (event) => {
+          const command = event.results[0][0].transcript.toLowerCase();
+          document.getElementById("status").innerText = `Command: ${command}`;
+
+          // Handle the command
+          switch (command) {
+            case "next":
+              currentSlideIndex++;
+              updateSlide();
+              break;
+            case "repeat":
+              readSlideText();
+              break;
+            default:
+              console.log("Command not recognized:", command);
+          }
+        };
+
+        recognition.onerror = (event) => {
+          console.error("Speech recognition error:", event.error);
+          document.getElementById("status").innerText = `Error: ${event.error}`;
+        };
+
+        recognition.onstart = () => {
+          console.log("Voice recognition started");
+          document.getElementById("status").innerText = "Listening...";
+        };
+
+        recognition.onend = () => {
+          console.log("Voice recognition ended");
+          recognition.start(); // Restart listening
+        };
+      }
+
+      // Function to load the selected recipe
+      function loadRecipe() {
+        const select = document.getElementById("recipe-select");
+        presentationUrl = select.value;
+        if (presentationUrl) {
+          currentSlideIndex = 0;
+          updateSlide();
+          startVoiceCommands();
+        }
+      }
+
+      // Initialize the app
+      function init() {
+        const select = document.getElementById("recipe-select");
+        select.addEventListener("change", loadRecipe);
+      }
+
+      // Start the app when the page loads
+      window.onload = init;
+    </script>
+  </body>
+</html>
