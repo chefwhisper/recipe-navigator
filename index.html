@@ -55,10 +55,11 @@
 
       // Function to update the iframe with the current slide
       function updateSlide() {
-        const iframe = document.getElementById("slide-iframe");
-        iframe.src = `${presentationUrl}/embed?slide=id.p${currentSlideIndex}`;
-        readSlideText();
-      }
+  const iframe = document.getElementById("slide-iframe");
+  // Remove the "/embed?slide=id.p" addition - use the URL as-is
+  iframe.src = presentationUrl; 
+  readSlideText();
+}
 
       // Function to read the slide text aloud
       function readSlideText() {
