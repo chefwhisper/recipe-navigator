@@ -1,33 +1,46 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <meta http-equiv="Permissions-Policy" content="interest-cohort=()">
     <title>Hands-Free Recipe Navigator</title>
+    <meta http-equiv="Permissions-Policy" content="interest-cohort=()">
     <style>
       body {
         font-family: Arial, sans-serif;
         text-align: center;
         padding: 20px;
+        max-width: 1000px;
+        margin: 0 auto;
       }
       #slide-container {
         margin: 20px auto;
-        width: 80%;
-        max-width: 800px;
+        width: 90%;
+        max-width: 900px;
+        min-height: 600px;
       }
       iframe {
         width: 100%;
-        height: 500px;
+        height: 600px;
         border: 1px solid #ccc;
+        border-radius: 8px;
       }
       #status {
-        margin-top: 20px;
-        font-size: 16px;
-        color: #555;
+        margin: 20px 0;
+        padding: 10px;
+        font-size: 18px;
+        color: #333;
+        background: #f8f8f8;
+        border-radius: 4px;
       }
       select {
-        padding: 10px;
+        padding: 12px;
         font-size: 16px;
         margin-bottom: 20px;
+        width: 80%;
+        max-width: 500px;
+      }
+      .loading {
+        color: #666;
+        font-style: italic;
       }
     </style>
   </head>
@@ -35,109 +48,101 @@
     <h1>Hands-Free Recipe Navigator</h1>
     <select id="recipe-select">
       <option value="">Select a Recipe</option>
-     <option value="https://docs.google.com/presentation/d/e/2PACX-1vT7CuI_cGpXw2-OYer_dJJk_F29mFAPbUKlZVjzO60V4sRpJRm1w__G7mkftIZ2pzQoBnzTS2dNCKtt/embed?start=false&loop=false&delayms=3000">Recipe Fusion: Garlic Steak Bites with Miso Butter Broccoli</option>
-     <option value="https://docs.google.com/presentation/d/1iz02mQnZ3yjxpfFVtoIc_H64FrpP9eNPcHSFrNt6B2o/embed?start=false&loop=false&delayms=3000">Recipe Fusion Miso-Caramel Pork Chops with Apples and Garlic Mashed Potatoes</option>
-      <option value="YOUR_THIRD_RECIPE_URL">Recipe 3</option>
+      <option value="https://docs.google.com/presentation/d/e/2PACX-1vT7CuI_cGpXw2-OYer_dJJk_F29mFAPbUKlZVjzO60V4sRpJRm1w__G7mkftIZ2pzQoBnzTS2dNCKtt/embed?start=false&loop=false&delayms=3000">
+        Garlic Steak Bites with Miso Butter Broccoli
+      </option>
+      <option value="https://docs.google.com/presentation/d/1iz02mQnZ3yjxpfFVtoIc_H64FrpP9eNPcHSFrNt6B2o/embed?start=false&loop=false&delayms=3000">
+        Miso-Caramel Pork Chops with Apples
+      </option>
     </select>
+    
     <div id="slide-container">
       <iframe id="slide-iframe" 
-  src="" 
-  frameborder="0" 
-  width="100%" 
-  height="569" 
-  allowfullscreen>
-</iframe>
+        src="" 
+        frameborder="0" 
+        allowfullscreen>
+      </iframe>
     </div>
-    <p id="status">Select a recipe and say "next" or "repeat."</p>
+    
+    <p id="status">Please select a recipe to begin</p>
 
     <script>
       let currentSlideIndex = 0;
       let presentationUrl = "";
+      let recognition;
 
-      // Function to update the iframe with the current slide
-      function updateSlide() {
-  const iframe = document.getElementById("slide-iframe");
-  iframe.src = presentationUrl; // Use URL directly without modification
-  
-  // Add loading state
-  document.getElementById("status").textContent = "Loading recipe...";
-  
-  iframe.onload = function() {
-    readSlideText();
-  };
-}
-
-      // Function to read the slide text aloud
+      // Improved text reading function
       function readSlideText() {
-  const statusEl = document.getElementById("status");
-  const iframe = document.getElementById("slide-iframe");
-  
-  try {
-    // Alternative text extraction method
-    const slideTitle = iframe.contentDocument?.title || "Recipe Slide";
-    const utterance = new SpeechSynthesisUtterance(slideTitle);
-    
-    // Add visual feedback
-    statusEl.textContent = `Now reading: ${slideTitle}`;
-    window.speechSynthesis.speak(utterance);
-    
-  } catch (error) {
-    console.log("Reading slide title instead of content");
-    statusEl.textContent = "Tip: Say 'next' to continue";
-  }
-}
+        const statusEl = document.getElementById("status");
+        const iframe = document.getElementById("slide-iframe");
+        
+        try {
+          // Get slide title as fallback
+          const slideTitle = iframe.contentDocument?.title || "Current Recipe Step";
+          
+          // Create speech
+          const utterance = new SpeechSynthesisUtterance();
+          utterance.text = slideTitle;
+          utterance.rate = 0.9; // Slightly slower pace
+          
+          // Visual feedback
+          statusEl.textContent = `Now reading: ${slideTitle}`;
+          
+          // Speak the text
+          window.speechSynthesis.cancel(); // Stop any previous speech
+          window.speechSynthesis.speak(utterance);
+          
+        } catch (error) {
+          statusEl.textContent = "Ready for voice commands";
+          console.log("Voice feedback active");
+        }
+      }
 
-      // Function to handle voice commands
+      // Simplified slide update
+      function updateSlide() {
+        const iframe = document.getElementById("slide-iframe");
+        const statusEl = document.getElementById("status");
+        
+        statusEl.textContent = "Loading recipe...";
+        iframe.src = presentationUrl;
+        
+        iframe.onload = function() {
+          statusEl.textContent = "Say 'next' or 'repeat'";
+          readSlideText();
+        };
+      }
+
+      // Voice command handling
       function startVoiceCommands() {
-        const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+        recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
         recognition.lang = "en-US";
         recognition.interimResults = false;
-        recognition.maxAlternatives = 1;
-
-        recognition.start();
-
+        
         recognition.onresult = (event) => {
           const command = event.results[0][0].transcript.toLowerCase();
-          document.getElementById("status").innerText = `Command: ${command}`;
-
-        recognition.onstart = () => {
-  document.getElementById("status").textContent = "Listening... Say 'next' or 'repeat'";
-};
-
-          // Handle the command
-          switch (command) {
-            case "next":
-              currentSlideIndex++;
-              updateSlide();
-              break;
-            case "repeat":
-              readSlideText();
-              break;
-            default:
-              console.log("Command not recognized:", command);
+          document.getElementById("status").textContent = `Heard: ${command}`;
+          
+          if (command.includes("next")) {
+            currentSlideIndex++;
+            updateSlide();
+          } else if (command.includes("repeat")) {
+            readSlideText();
           }
         };
 
         recognition.onerror = (event) => {
-          console.error("Speech recognition error:", event.error);
-          document.getElementById("status").innerText = `Error: ${event.error}`;
+          console.log("Voice error:", event.error);
         };
 
-        recognition.onstart = () => {
-          console.log("Voice recognition started");
-          document.getElementById("status").innerText = "Listening...";
-        };
-
-        recognition.onend = () => {
-          console.log("Voice recognition ended");
-          recognition.start(); // Restart listening
-        };
+        recognition.start();
+        recognition.onend = recognition.start; // Auto-restart
       }
 
-      // Function to load the selected recipe
+      // Recipe selection handler
       function loadRecipe() {
         const select = document.getElementById("recipe-select");
         presentationUrl = select.value;
+        
         if (presentationUrl) {
           currentSlideIndex = 0;
           updateSlide();
@@ -145,13 +150,17 @@
         }
       }
 
-      // Initialize the app
+      // Initialize app
       function init() {
         const select = document.getElementById("recipe-select");
         select.addEventListener("change", loadRecipe);
+        
+        // Cancel speech when leaving page
+        window.addEventListener("beforeunload", () => {
+          window.speechSynthesis.cancel();
+        });
       }
 
-      // Start the app when the page loads
       window.onload = init;
     </script>
   </body>
