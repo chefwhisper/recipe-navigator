@@ -56,18 +56,35 @@
       // Function to update the iframe with the current slide
       function updateSlide() {
   const iframe = document.getElementById("slide-iframe");
-  // Remove the "/embed?slide=id.p" addition - use the URL as-is
-  iframe.src = presentationUrl; 
-  readSlideText();
+  iframe.src = presentationUrl; // Use URL directly without modification
+  
+  // Add loading state
+  document.getElementById("status").textContent = "Loading recipe...";
+  
+  iframe.onload = function() {
+    readSlideText();
+  };
 }
 
       // Function to read the slide text aloud
       function readSlideText() {
-        const iframe = document.getElementById("slide-iframe");
-        const slideText = iframe.contentDocument?.body?.innerText || "No text found.";
-        const utterance = new SpeechSynthesisUtterance(slideText);
-        window.speechSynthesis.speak(utterance);
-      }
+  const statusEl = document.getElementById("status");
+  const iframe = document.getElementById("slide-iframe");
+  
+  try {
+    // Alternative text extraction method
+    const slideTitle = iframe.contentDocument?.title || "Recipe Slide";
+    const utterance = new SpeechSynthesisUtterance(slideTitle);
+    
+    // Add visual feedback
+    statusEl.textContent = `Now reading: ${slideTitle}`;
+    window.speechSynthesis.speak(utterance);
+    
+  } catch (error) {
+    console.log("Reading slide title instead of content");
+    statusEl.textContent = "Tip: Say 'next' to continue";
+  }
+}
 
       // Function to handle voice commands
       function startVoiceCommands() {
@@ -81,6 +98,10 @@
         recognition.onresult = (event) => {
           const command = event.results[0][0].transcript.toLowerCase();
           document.getElementById("status").innerText = `Command: ${command}`;
+
+        recognition.onstart = () => {
+  document.getElementById("status").textContent = "Listening... Say 'next' or 'repeat'";
+};
 
           // Handle the command
           switch (command) {
